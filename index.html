@@ -8,14 +8,12 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
     <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-        <!-- Brand Name updated to Orange -->
         <h1 class="text-3xl font-bold tracking-tight text-center text-orange-500 font-mono">RivalX</h1>
         <p class="text-slate-400 text-sm text-center mt-2 mb-6">Claim Your Free Custom Iterative Deep-Dive Report</p>
         
         <form id="rivalxForm" class="space-y-4">
             <div>
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Your Email</label>
-                <!-- Inputs updated to Orange borders on focus -->
                 <input type="email" id="email" required placeholder="name@company.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange-500 text-sm">
             </div>
             
@@ -32,7 +30,6 @@
                 </select>
             </div>
 
-            <!-- New Dynamic Time Selection Layout -->
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Start Time</label>
@@ -48,7 +45,6 @@
                 </div>
             </div>
 
-            <!-- Submit Button updated to Orange -->
             <button type="submit" id="submitBtn" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-medium py-3 rounded-lg mt-4 transition-colors cursor-pointer text-sm shadow-lg shadow-orange-500/20">
                 Initialize Free Custom Analysis
             </button>
@@ -183,7 +179,16 @@
                     // Force system to refresh arrays to instantly pull filled times away
                     loadBookedSlots();
                 } else {
-                    throw new Error(result.message || "No system credits remaining for this transaction.");
+                    // Check if Make sent back details about the conflicting booking numbers
+                    if (result.booked_start && result.booked_end) {
+                        // Use your existing format12h function to turn raw numbers into human-readable text!
+                        const displayStart = format12h(parseInt(result.booked_start));
+                        const displayEnd = format12h(parseInt(result.booked_end));
+                        
+                        throw new Error(`Sorry! That time overlaps with an existing booking from ${displayStart} to ${displayEnd}. Please choose an open window.`);
+                    } else {
+                        throw new Error(result.message || "No system credits remaining for this transaction.");
+                    }
                 }
             } catch (err) {
                 msg.className = "text-center text-xs text-red-400 mt-2";
