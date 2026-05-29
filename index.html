@@ -8,23 +8,25 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
     <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-        <h1 class="text-3xl font-bold tracking-tight text-center text-indigo-400 font-mono">RivalX</h1>
+        <!-- Brand Name updated to Orange -->
+        <h1 class="text-3xl font-bold tracking-tight text-center text-orange-500 font-mono">RivalX</h1>
         <p class="text-slate-400 text-sm text-center mt-2 mb-6">Claim Your Free Custom Iterative Deep-Dive Report</p>
         
         <form id="rivalxForm" class="space-y-4">
             <div>
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Your Email</label>
-                <input type="email" id="email" required placeholder="name@company.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-indigo-500 text-sm">
+                <!-- Inputs updated to Orange borders on focus -->
+                <input type="email" id="email" required placeholder="name@company.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange-500 text-sm">
             </div>
             
             <div>
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Target Profile / Asset URL</label>
-                <input type="url" id="targetUrl" required placeholder="https://instagram.com/competitor" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-indigo-500 text-sm">
+                <input type="url" id="targetUrl" required placeholder="https://instagram.com/competitor" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange-500 text-sm">
             </div>
 
             <div>
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Target Classification</label>
-                <select id="auditType" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-indigo-500 text-sm">
+                <select id="auditType" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange-500 text-sm">
                     <option value="business">Competitor / Business Benchmarking</option>
                     <option value="individual">Individual Profile Vibe & Safety Check</option>
                 </select>
@@ -34,19 +36,20 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Start Time</label>
-                    <select id="startTime" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 focus:outline-none focus:border-indigo-500 text-sm">
+                    <select id="startTime" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-500 text-sm">
                         <option value="">Loading times...</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">End Time</label>
-                    <select id="endTime" required disabled class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 focus:outline-none focus:border-indigo-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                    <select id="endTime" required disabled class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                         <option value="">Select start first...</option>
                     </select>
                 </div>
             </div>
 
-            <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-lg mt-4 transition-colors cursor-pointer text-sm shadow-lg shadow-indigo-500/20">
+            <!-- Submit Button updated to Orange -->
+            <button type="submit" id="submitBtn" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-medium py-3 rounded-lg mt-4 transition-colors cursor-pointer text-sm shadow-lg shadow-orange-500/20">
                 Initialize Free Custom Analysis
             </button>
             <p id="statusMessage" class="text-center text-xs mt-2 hidden"></p>
