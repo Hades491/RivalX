@@ -48,19 +48,18 @@
             <button type="submit" id="submitBtn" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-medium py-3 rounded-lg mt-4 transition-colors cursor-pointer text-sm shadow-lg shadow-orange-500/20">
                 Initialize Free Custom Analysis
             </button>
-            <p id="statusMessage" class="text-center text-xs mt-2 hidden"></p>
+            <div id="statusContainer" class="mt-4 p-3 rounded-lg hidden bg-slate-950 border text-xs">
+                <p id="statusMessage" class="text-center"></p>
+                <p id="alternativeTimes" class="mt-2 pt-2 border-t border-slate-800 text-slate-400 hidden"></p>
+            </div>
         </form>
     </div>
 
     <script>
-        // 🔗 Shared Webhook URL Configuration
         const MAKE_WEBHOOK_URL = 'https://hook.eu1.make.com/b65duyn3sh2njwsg0e18vrm23jo1gp5o';
-
-        // ⏰ Hours Matrix: Covers 2 AM (2) to 12 AM Midnight (24)
         const masterHours = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]; 
         let bookedRanges = []; 
 
-        // Formats numerical hour values to user-friendly strings safely including midnight
         function format12h(hour) {
             if (hour === 24 || hour === 0) return '12:00 AM';
             if (hour === 12) return '12:00 PM';
@@ -69,34 +68,28 @@
             return `${displayHour}:00 ${ampm}`;
         }
 
-        // Fetch already taken appointments from your backend
         async function loadBookedSlots() {
             try {
-                // Sends a proper POST request with action: "check" so your Router path unlocks
                 const response = await fetch(MAKE_WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: "check" })
                 });
-                
                 if (response.ok) {
                     bookedRanges = await response.json(); 
                 }
             } catch (err) {
-                console.warn("Could not retrieve existing bookings, initializing defaults.", err);
+                console.warn("Could not retrieve existing bookings.", err);
             }
             populateStartTimes();
         }
 
-        // Dynamically build and remove unavailable times from Start Time picker
         function populateStartTimes() {
             const startSelect = document.getElementById('startTime');
             startSelect.innerHTML = '<option value="">Select start time...</option>';
 
             masterHours.forEach(hour => {
-                // Determine if this specific hour is trapped inside an existing booking
                 const isBooked = bookedRanges.some(booking => hour >= booking.startRaw && hour < booking.endRaw);
-                
                 const option = document.createElement('option');
                 option.value = hour;
                 option.textContent = format12h(hour);
@@ -109,7 +102,6 @@
             });
         }
 
-        // Re-calculate the available endpoints whenever a start time is updated
         document.getElementById('startTime').addEventListener('change', function() {
             const startHour = parseInt(this.value);
             const endSelect = document.getElementById('endTime');
@@ -123,14 +115,12 @@
             endSelect.disabled = false;
             endSelect.innerHTML = '<option value="">Select end time...</option>';
 
-            // Scan forward to see when the next scheduled booking block begins
-            let maxAvailableHour = Math.max(...masterHours) + 1; // Allows up to midnight (24)
+            let maxAvailableHour = Math.max(...masterHours) + 1; 
             const upcomingBookings = bookedRanges.filter(b => b.startRaw > startHour);
             if (upcomingBookings.length > 0) {
                 maxAvailableHour = Math.min(...upcomingBookings.map(b => b.startRaw));
             }
 
-            // Build out the dynamic window safe for booking
             for (let hour = startHour + 1; hour <= maxAvailableHour; hour++) {
                 if (masterHours.includes(hour) || hour === Math.max(...masterHours) + 1) {
                     const option = document.createElement('option');
@@ -141,20 +131,87 @@
             }
         });
 
-        // Submit complete payload structure to your primary webhook
+        // 🧠 Intelligent Helper: Generates clear text lists of remaining free time windows
+        function getAvailableSlotsText() {
+            let freeHours = masterHours.filter(hour => {
+                return !bookedRanges.some(booking => hour >= booking.startRaw && hour < booking.endRaw);
+            });
+
+            if (freeHours.length === 0) return "No open time slots remaining today.";
+
+            // Group individual free hours into clean blocks (e.g., "2:00 AM - 5:00 AM")
+            let blocks = [];
+            let startBlock = freeHours[0];
+            let prevHour = freeHours[0];
+
+            for (let i = 1; i <= freeHours.length; i++) {
+                if (freeHours[i] === prevHour + 1) {
+                    prevHour = freeHours[i];
+                } else {
+                    blocks.push(`${format12h(startBlock)} to ${format12h(prevHour + 1)}`);
+                    if (freeHours[i]) {
+                        startBlock = freeHours[i];
+                        prevHour = freeHours[i];
+                    }
+                }
+            }
+            return `💡 Open slots left: ${blocks.join(', ')}`;
+        }
+
         document.getElementById('rivalxForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
+            const container = document.getElementById('statusContainer');
             const msg = document.getElementById('statusMessage');
+            const altText = document.getElementById('alternativeTimes');
             
             btn.disabled = true;
             btn.innerText = "Verifying & Allocating Resources...";
+            container.classList.add('hidden');
+            altText.classList.add('hidden');
             
             const startRaw = parseInt(document.getElementById('startTime').value);
             const endRaw = parseInt(document.getElementById('endTime').value);
 
+            // 🧠 Pre-submission check: Verify live data hasn't changed right before sending
+            try {
+                const checkRes = await fetch(MAKE_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: "check" })
+                });
+                if (checkRes.ok) bookedRanges = await checkRes.json();
+            } catch(e) {}
+
+            // Check if selected time is taken
+            const conflict = bookedRanges.find(b => (startRaw < b.endRaw && endRaw > b.startRaw));
+
+            if (conflict) {
+                container.className = "mt-4 p-3 rounded-lg bg-red-950/40 border border-red-800 text-xs";
+                msg.className = "text-red-400 font-medium";
+                
+                // Formats intelligent error output based on the number of bookings
+                if (bookedRanges.length > 1) {
+                    const takenList = bookedRanges.map(b => `${format12h(b.startRaw)}-${format12h(b.endRaw)}`).join(', ');
+                    msg.innerText = `Booking Conflict! The time slots [ ${takenList} ] are completely occupied.`;
+                } else {
+                    msg.innerText = `Booking Conflict! That slot overlaps an existing reservation from ${format12h(conflict.startRaw)} to ${format12h(conflict.endRaw)}.`;
+                }
+
+                // Append the dynamic remaining slot suggestions
+                altText.innerText = getAvailableSlotsText();
+                altText.classList.remove('hidden');
+                container.classList.remove('hidden');
+                
+                btn.disabled = false;
+                btn.innerText = "Initialize Free Custom Analysis";
+                populateStartTimes();
+                return; // Stop submission entirely
+            }
+
+            // If clean, proceed with submission
             const payload = {
-                action: "create", // Tells the router to follow the Google Sheets Add a Row path
+                action: "create",
                 email: document.getElementById('email').value,
                 target_url: document.getElementById('targetUrl').value,
                 audit_type: document.getElementById('auditType').value,
@@ -171,38 +228,24 @@
                     body: JSON.stringify(payload)
                 });
                 
-                // If Make sends back the default "Accepted" message during creation, handle it cleanly
-                let result = {};
-                const responseText = await response.text();
-                try {
-                    result = JSON.parse(responseText);
-                } catch(e) {
-                    result = { message: responseText };
-                }
-                
                 if (response.ok) {
-                    msg.className = "text-center text-xs text-green-400 mt-2";
+                    container.className = "mt-4 p-3 rounded-lg bg-green-950/40 border border-green-800 text-xs";
+                    msg.className = "text-green-400 font-medium";
                     msg.innerText = "Success! Your custom analysis window has been initialized. Check your email for status alerts.";
-                    msg.classList.remove('hidden');
+                    container.classList.remove('hidden');
                     
                     document.getElementById('rivalxForm').reset();
                     document.getElementById('endTime').disabled = true;
                     
                     loadBookedSlots();
                 } else {
-                    if (result.booked_start && result.booked_end) {
-                        const displayStart = format12h(parseInt(result.booked_start));
-                        const displayEnd = format12h(parseInt(result.booked_end));
-                        
-                        throw new Error(`Sorry! That time overlaps with an existing booking from ${displayStart} to ${displayEnd}. Please choose an open window.`);
-                    } else {
-                        throw new Error(result.message || "No system credits remaining for this transaction.");
-                    }
+                    throw new Error("An error occurred during resource allocation.");
                 }
             } catch (err) {
-                msg.className = "text-center text-xs text-red-400 mt-2";
-                msg.innerText = err.message || "An unexpected error occurred during resource allocation.";
-                msg.classList.remove('hidden');
+                container.className = "mt-4 p-3 rounded-lg bg-red-950/40 border border-red-800 text-xs";
+                msg.className = "text-red-400 font-medium";
+                msg.innerText = err.message;
+                container.classList.remove('hidden');
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Initialize Free Custom Analysis";
