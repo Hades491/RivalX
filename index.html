@@ -131,7 +131,6 @@
             }
         });
 
-        // 🧠 Intelligent Helper: Generates clear text lists of remaining free time windows
         function getAvailableSlotsText() {
             let freeHours = masterHours.filter(hour => {
                 return !bookedRanges.some(booking => hour >= booking.startRaw && hour < booking.endRaw);
@@ -139,7 +138,6 @@
 
             if (freeHours.length === 0) return "No open time slots remaining today.";
 
-            // Group individual free hours into clean blocks (e.g., "2:00 AM - 5:00 AM")
             let blocks = [];
             let startBlock = freeHours[0];
             let prevHour = freeHours[0];
@@ -173,7 +171,6 @@
             const startRaw = parseInt(document.getElementById('startTime').value);
             const endRaw = parseInt(document.getElementById('endTime').value);
 
-            // 🧠 Pre-submission check: Verify live data hasn't changed right before sending
             try {
                 const checkRes = await fetch(MAKE_WEBHOOK_URL, {
                     method: 'POST',
@@ -183,14 +180,12 @@
                 if (checkRes.ok) bookedRanges = await checkRes.json();
             } catch(e) {}
 
-            // Check if selected time is taken
             const conflict = bookedRanges.find(b => (startRaw < b.endRaw && endRaw > b.startRaw));
 
             if (conflict) {
                 container.className = "mt-4 p-3 rounded-lg bg-red-950/40 border border-red-800 text-xs";
                 msg.className = "text-red-400 font-medium";
                 
-                // Formats intelligent error output based on the number of bookings
                 if (bookedRanges.length > 1) {
                     const takenList = bookedRanges.map(b => `${format12h(b.startRaw)}-${format12h(b.endRaw)}`).join(', ');
                     msg.innerText = `Booking Conflict! The time slots [ ${takenList} ] are completely occupied.`;
@@ -198,7 +193,6 @@
                     msg.innerText = `Booking Conflict! That slot overlaps an existing reservation from ${format12h(conflict.startRaw)} to ${format12h(conflict.endRaw)}.`;
                 }
 
-                // Append the dynamic remaining slot suggestions
                 altText.innerText = getAvailableSlotsText();
                 altText.classList.remove('hidden');
                 container.classList.remove('hidden');
@@ -206,10 +200,9 @@
                 btn.disabled = false;
                 btn.innerText = "Initialize Free Custom Analysis";
                 populateStartTimes();
-                return; // Stop submission entirely
+                return;
             }
 
-            // If clean, proceed with submission
             const payload = {
                 action: "create",
                 email: document.getElementById('email').value,
@@ -228,19 +221,25 @@
                     body: JSON.stringify(payload)
                 });
                 
-                if (response.ok) {
-                    container.className = "mt-4 p-3 rounded-lg bg-green-950/40 border border-green-800 text-xs";
-                    msg.className = "text-green-400 font-medium";
-                    msg.innerText = "Success! Your custom analysis window has been initialized. Check your email for status alerts.";
-                    container.classList.remove('hidden');
-                    
-                    document.getElementById('rivalxForm').reset();
-                    document.getElementById('endTime').disabled = true;
-                    
-                    loadBookedSlots();
-                } else {
-                    throw new Error("An error occurred during resource allocation.");
+                if (!response.ok) {
+                    throw new Error("Make.com server rejected this submission.");
                 }
+
+                const responseText = await response.text();
+                
+                if (responseText === "Accepted") {
+                    throw new Error("Booking failed: Make received the data but your Router filter blocked Path B.");
+                }
+                
+                container.className = "mt-4 p-3 rounded-lg bg-green-950/40 border border-green-800 text-xs";
+                msg.className = "text-green-400 font-medium";
+                msg.innerText = "Success! Your custom analysis window has been initialized. Check your email for status alerts.";
+                container.classList.remove('hidden');
+                
+                document.getElementById('rivalxForm').reset();
+                document.getElementById('endTime').disabled = true;
+                
+                loadBookedSlots();
             } catch (err) {
                 container.className = "mt-4 p-3 rounded-lg bg-red-950/40 border border-red-800 text-xs";
                 msg.className = "text-red-400 font-medium";
