@@ -116,6 +116,7 @@
             endSelect.innerHTML = '<option value="">Select end time...</option>';
 
             let maxAvailableHour = Math.max(...masterHours) + 1; 
+            // Look forward to find the absolute next reservation block
             const upcomingBookings = bookedRanges.filter(b => b.startRaw > startHour);
             if (upcomingBookings.length > 0) {
                 maxAvailableHour = Math.min(...upcomingBookings.map(b => b.startRaw));
@@ -171,6 +172,7 @@
             const startRaw = parseInt(document.getElementById('startTime').value);
             const endRaw = parseInt(document.getElementById('endTime').value);
 
+            // Fetch live array right before processing to catch speed-bookers
             try {
                 const checkRes = await fetch(MAKE_WEBHOOK_URL, {
                     method: 'POST',
@@ -180,6 +182,7 @@
                 if (checkRes.ok) bookedRanges = await checkRes.json();
             } catch(e) {}
 
+            // 🧠 Mathematical Range Overlap Formula: Catches complete swallowing bugs
             const conflict = bookedRanges.find(b => (startRaw < b.endRaw && endRaw > b.startRaw));
 
             if (conflict) {
